@@ -16,3 +16,6 @@ __pycache__/
 # AI agents
 .claude/
 CLAUDE.md
+
+# backups
+backups/

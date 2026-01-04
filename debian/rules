@@ -45,6 +45,9 @@ override_dh_auto_install:
 	install -d $(CURDIR)/debian/keko-ts3/usr/sbin
 	install -m 755 debian/keko-ts3-backup $(CURDIR)/debian/keko-ts3/usr/sbin/
 
+	# Install legacy import script (from scripts/ directory)
+	install -m 755 scripts/import_legacy.py $(CURDIR)/debian/keko-ts3/usr/sbin/keko-ts3-import-legacy
+
 	# Note: systemd service and cron are installed automatically by debhelper
 	# via dh_installsystemd and dh_installcron from debian/keko-ts3.service
 	# and debian/keko-ts3.cron.d

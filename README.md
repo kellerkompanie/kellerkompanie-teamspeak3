@@ -199,6 +199,90 @@ Check the logs for the new version:
 sudo journalctl -u keko-ts3 -n 50
 ```
 
+## Migrating from Legacy Installation
+
+If you have an existing TeamSpeak 3 server installation (manual install, not using this package), you can import your data using the included `keko-ts3-import-legacy` tool.
+
+### 1. Create a backup on your old server
+
+Assuming TeamSpeak is installed in `/home/teamspeak/`:
+
+```bash
+# Stop the old server first
+sudo -u teamspeak /home/teamspeak/ts3server_startscript.sh stop
+
+# Create the backup archive
+cd /home
+sudo tar -czf /tmp/teamspeak_backup.tar.gz teamspeak/
+```
+
+The directory should contain files like:
+
+```
+/home/teamspeak/
+├── ts3server.sqlitedb      # Database (required)
+├── ts3server.sqlitedb-wal  # Database WAL file
+├── ts3server.sqlitedb-shm  # Database shared memory
+├── licensekey.dat          # License key
+├── files/                  # Uploaded files (icons, channel files)
+├── query_ip_whitelist.txt  # Query IP allowlist
+├── ssh_host_rsa_key        # SSH query host key
+├── ts3server               # Server binary (not imported)
+└── ...
+```
+
+### 2. Transfer the backup to the new server
+
+```bash
+scp old-server:/tmp/teamspeak_backup.tar.gz new-server:/tmp/
+```
+
+### 3. Install keko-ts3 on the new server (if not already)
+
+```bash
+sudo dpkg -i keko-ts3_*.deb
+sudo apt install -f
+```
+
+### 4. Run the import
+
+```bash
+sudo keko-ts3-import-legacy /tmp/teamspeak_backup.tar.gz
+```
+
+The script will:
+- Extract the backup and locate the TeamSpeak data
+- Show which files will be imported
+- Ask for confirmation
+- Stop the keko-ts3 service
+- Import all data files with correct ownership
+- Start the service
+
+Use `-y` to skip the confirmation prompt:
+
+```bash
+sudo keko-ts3-import-legacy -y /tmp/teamspeak_backup.tar.gz
+```
+
+### What gets imported
+
+| File | Description |
+|------|-------------|
+| `ts3server.sqlitedb` | Server database (users, channels, permissions, bans) |
+| `licensekey.dat` | License key (if present) |
+| `files/` | Uploaded files (icons, avatars, channel file transfers) |
+| `query_ip_whitelist.txt` | Query IP allowlist (renamed to `query_ip_allowlist.txt`) |
+| `ssh_host_rsa_key` | SSH query host key (preserves SSH fingerprint) |
+| `ts3server.ini` | Server configuration |
+
+### 5. Clean up
+
+After successful import, remove the backup file:
+
+```bash
+rm /tmp/teamspeak_backup.tar.gz
+```
+
 ## Uninstallation
 
 ```bash

@@ -19,5 +19,8 @@ WORKDIR /build/keko-ts3
 # Copy debian packaging files
 COPY debian/ /build/keko-ts3/debian/
 
+# Copy scripts (for import_legacy.py)
+COPY scripts/ /build/keko-ts3/scripts/
+
 # Set working directory for dpkg-buildpackage
 WORKDIR /build/keko-ts3
