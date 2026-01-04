@@ -1,0 +1,56 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+
+TS3_VERSION = 3.13.7
+TS3_ARCHIVE = teamspeak3-server_linux_amd64-$(TS3_VERSION).tar.bz2
+TS3_URL = https://files.teamspeak-services.com/releases/server/$(TS3_VERSION)/$(TS3_ARCHIVE)
+TS3_DIR = teamspeak3-server_linux_amd64
+
+%:
+	dh $@
+
+override_dh_auto_clean:
+	rm -rf $(TS3_DIR)
+	rm -f $(TS3_ARCHIVE)
+
+override_dh_auto_build:
+	# Download TeamSpeak 3 server if not present
+	if [ ! -f $(TS3_ARCHIVE) ]; then \
+		wget -q $(TS3_URL); \
+	fi
+	# Extract archive
+	tar xjf $(TS3_ARCHIVE)
+
+override_dh_auto_install:
+	# Create installation directories
+	install -d $(CURDIR)/debian/keko-ts3/opt/teamspeak3
+	install -d $(CURDIR)/debian/keko-ts3/var/lib/teamspeak3
+	install -d $(CURDIR)/debian/keko-ts3/var/log/teamspeak3
+
+	# Install server files
+	cp -r $(TS3_DIR)/* $(CURDIR)/debian/keko-ts3/opt/teamspeak3/
+
+	# Remove unnecessary files
+	rm -f $(CURDIR)/debian/keko-ts3/opt/teamspeak3/ts3server_startscript.sh
+	rm -f $(CURDIR)/debian/keko-ts3/opt/teamspeak3/CHANGELOG
+	rm -rf $(CURDIR)/debian/keko-ts3/opt/teamspeak3/doc
+	rm -rf $(CURDIR)/debian/keko-ts3/opt/teamspeak3/redist
+	rm -f $(CURDIR)/debian/keko-ts3/opt/teamspeak3/LICENSE
+
+	# Set permissions
+	chmod 755 $(CURDIR)/debian/keko-ts3/opt/teamspeak3/ts3server
+
+	# Install backup script
+	install -d $(CURDIR)/debian/keko-ts3/usr/sbin
+	install -m 755 debian/keko-ts3-backup $(CURDIR)/debian/keko-ts3/usr/sbin/
+
+	# Note: systemd service and cron are installed automatically by debhelper
+	# via dh_installsystemd and dh_installcron from debian/keko-ts3.service
+	# and debian/keko-ts3.cron.d
+
+override_dh_strip:
+	# Don't strip binaries - they're pre-built
+
+override_dh_shlibdeps:
+	# Skip shared library dependencies check for proprietary binaries

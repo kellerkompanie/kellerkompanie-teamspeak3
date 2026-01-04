@@ -1,0 +1,12 @@
+keko-ts3 (3.13.7-1) trixie; urgency=medium
+
+  * TeamSpeak 3 Server version 3.13.7
+
+ -- Schwaggot <schwaggot@kellerkompanie.com>  Sun, 04 Jan 2026 15:55:58 +0100
+
+keko-ts3 (3.11.1-1) trixie; urgency=medium
+
+  * Initial release
+  * TeamSpeak 3 Server version 3.11.1
+
+ -- Schwaggot <schwaggot@kellerkompanie.com>  Sun, 04 Jan 2026 15:12:08 +0100

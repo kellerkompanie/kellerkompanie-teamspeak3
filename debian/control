@@ -1,0 +1,18 @@
+Source: keko-ts3
+Section: games
+Priority: optional
+Maintainer: Schwaggot <schwaggot@kellerkompanie.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+Homepage: https://www.teamspeak.com/
+Rules-Requires-Root: no
+
+Package: keko-ts3
+Architecture: amd64
+Depends: ${misc:Depends}, adduser
+Description: TeamSpeak 3 Server
+ TeamSpeak 3 is proprietary voice-over-Internet Protocol (VoIP) software
+ that allows users to speak on a chat channel with other users.
+ .
+ This package provides the TeamSpeak 3 server for Debian systems,
+ packaged by Kellerkompanie.

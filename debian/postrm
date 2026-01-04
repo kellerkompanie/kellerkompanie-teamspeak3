@@ -1,0 +1,31 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    purge)
+        # Remove data directories on purge
+        rm -rf /var/lib/teamspeak3
+        rm -rf /var/log/teamspeak3
+        rm -rf /var/backups/keko-ts3
+
+        # Remove user on purge
+        if getent passwd teamspeak3 > /dev/null; then
+            deluser --quiet --system teamspeak3 || true
+        fi
+
+        # Remove group if it exists and has no members
+        if getent group teamspeak3 > /dev/null; then
+            delgroup --quiet --system teamspeak3 || true
+        fi
+        ;;
+
+    remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        ;;
+esac
+
+# Reload systemd
+systemctl daemon-reload || true
+
+#DEBHELPER#
+
+exit 0

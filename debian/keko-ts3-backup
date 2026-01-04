@@ -1,0 +1,221 @@
+#!/bin/bash
+# keko-ts3-backup - Backup and restore script for TeamSpeak 3 Server
+#
+# Creates compressed backups of the TeamSpeak 3 data directory.
+# Installed to /usr/sbin/keko-ts3-backup
+# Scheduled via /etc/cron.d/keko-ts3
+#
+# Usage:
+#   keko-ts3-backup --monthly         # Create monthly backup (rotated)
+#   keko-ts3-backup --yearly          # Create yearly backup (kept forever)
+#   keko-ts3-backup --all             # Create both monthly and yearly backup
+#   keko-ts3-backup --list            # List available backups
+#   keko-ts3-backup --restore <file>  # Restore from backup file
+#
+# Backup types:
+#   - Monthly: keko-ts3_monthly_YYYYMMDD_HHMMSS.tar.gz (rotated, keep last 6)
+#   - Yearly:  keko-ts3_yearly_YYYYMMDD.tar.gz (kept forever, one per year)
+
+set -e
+
+BACKUP_DIR="/var/backups/keko-ts3"
+DATA_DIR="/var/lib/teamspeak3"
+MAX_MONTHLY_BACKUPS=6  # Keep last 6 monthly backups
+
+# Create backup directory if it doesn't exist
+mkdir -p "$BACKUP_DIR"
+
+# Generate timestamps
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+DATE=$(date +%Y%m%d)
+YEAR=$(date +%Y)
+
+show_usage() {
+    echo "Usage: keko-ts3-backup <command>"
+    echo
+    echo "Commands:"
+    echo "  --monthly         Create monthly backup (rotated, keep last 6)"
+    echo "  --yearly          Create yearly backup (kept forever)"
+    echo "  --all             Create both monthly and yearly backup"
+    echo "  --list            List available backups"
+    echo "  --restore <file>  Restore from backup file"
+    echo
+    echo "Examples:"
+    echo "  keko-ts3-backup --monthly"
+    echo "  keko-ts3-backup --restore /var/backups/keko-ts3/keko-ts3_monthly_20260101_030000.tar.gz"
+}
+
+list_backups() {
+    echo "Available backups in $BACKUP_DIR:"
+    echo
+    echo "Monthly (rotated):"
+    if ls "$BACKUP_DIR"/keko-ts3_monthly_*.tar.gz 1>/dev/null 2>&1; then
+        ls -1t "$BACKUP_DIR"/keko-ts3_monthly_*.tar.gz | while read -r file; do
+            SIZE=$(du -h "$file" | cut -f1)
+            echo "  $(basename "$file")  ($SIZE)"
+        done
+    else
+        echo "  (none)"
+    fi
+    echo
+    echo "Yearly (kept forever):"
+    if ls "$BACKUP_DIR"/keko-ts3_yearly_*.tar.gz 1>/dev/null 2>&1; then
+        ls -1t "$BACKUP_DIR"/keko-ts3_yearly_*.tar.gz | while read -r file; do
+            SIZE=$(du -h "$file" | cut -f1)
+            echo "  $(basename "$file")  ($SIZE)"
+        done
+    else
+        echo "  (none)"
+    fi
+}
+
+create_yearly_backup() {
+    # Check if data directory exists
+    if [ ! -d "$DATA_DIR" ]; then
+        echo "Error: Data directory $DATA_DIR does not exist"
+        exit 1
+    fi
+
+    YEARLY_FILE="$BACKUP_DIR/keko-ts3_yearly_${DATE}.tar.gz"
+
+    # Check if yearly backup for this year already exists
+    if ls "$BACKUP_DIR"/keko-ts3_yearly_${YEAR}*.tar.gz 1>/dev/null 2>&1; then
+        echo "Yearly backup for $YEAR already exists, skipping."
+        return 0
+    fi
+
+    echo "Creating yearly backup: $YEARLY_FILE"
+    tar -czf "$YEARLY_FILE" -C /var/lib teamspeak3
+    chmod 600 "$YEARLY_FILE"
+    SIZE=$(du -h "$YEARLY_FILE" | cut -f1)
+    echo "Yearly backup complete: $SIZE"
+}
+
+create_monthly_backup() {
+    # Check if data directory exists
+    if [ ! -d "$DATA_DIR" ]; then
+        echo "Error: Data directory $DATA_DIR does not exist"
+        exit 1
+    fi
+
+    MONTHLY_FILE="$BACKUP_DIR/keko-ts3_monthly_$TIMESTAMP.tar.gz"
+    echo "Creating monthly backup: $MONTHLY_FILE"
+    tar -czf "$MONTHLY_FILE" -C /var/lib teamspeak3
+    chmod 600 "$MONTHLY_FILE"
+    SIZE=$(du -h "$MONTHLY_FILE" | cut -f1)
+    echo "Monthly backup complete: $SIZE"
+
+    # Rotate old monthly backups (keep only MAX_MONTHLY_BACKUPS)
+    BACKUP_COUNT=$(find "$BACKUP_DIR" -name "keko-ts3_monthly_*.tar.gz" -type f | wc -l)
+    if [ "$BACKUP_COUNT" -gt "$MAX_MONTHLY_BACKUPS" ]; then
+        echo "Rotating old monthly backups (keeping last $MAX_MONTHLY_BACKUPS)..."
+        find "$BACKUP_DIR" -name "keko-ts3_monthly_*.tar.gz" -type f -printf '%T@ %p\n' | \
+            sort -n | head -n -$MAX_MONTHLY_BACKUPS | cut -d' ' -f2- | xargs -r rm -f
+    fi
+}
+
+restore_backup() {
+    BACKUP_FILE="$1"
+
+    # Check if file argument provided
+    if [ -z "$BACKUP_FILE" ]; then
+        echo "Error: No backup file specified"
+        echo
+        echo "Usage: keko-ts3-backup --restore <file>"
+        echo
+        list_backups
+        exit 1
+    fi
+
+    # If just a filename, prepend backup directory
+    if [[ "$BACKUP_FILE" != /* ]]; then
+        BACKUP_FILE="$BACKUP_DIR/$BACKUP_FILE"
+    fi
+
+    # Check if file exists
+    if [ ! -f "$BACKUP_FILE" ]; then
+        echo "Error: Backup file not found: $BACKUP_FILE"
+        echo
+        list_backups
+        exit 1
+    fi
+
+    # Check if it's a valid backup file
+    if ! tar -tzf "$BACKUP_FILE" >/dev/null 2>&1; then
+        echo "Error: Invalid or corrupted backup file: $BACKUP_FILE"
+        exit 1
+    fi
+
+    echo "=== TeamSpeak 3 Server Restore ==="
+    echo
+    echo "Backup file: $BACKUP_FILE"
+    echo "Size: $(du -h "$BACKUP_FILE" | cut -f1)"
+    echo
+    echo "WARNING: This will:"
+    echo "  1. Stop the TeamSpeak 3 server"
+    echo "  2. Delete current data in $DATA_DIR"
+    echo "  3. Restore data from backup"
+    echo "  4. Start the TeamSpeak 3 server"
+    echo
+    read -p "Are you sure you want to continue? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Restore cancelled."
+        exit 0
+    fi
+
+    echo
+    echo "Stopping TeamSpeak 3 server..."
+    systemctl stop keko-ts3 || true
+
+    echo "Removing current data..."
+    rm -rf "$DATA_DIR"
+
+    echo "Restoring from backup..."
+    tar -xzf "$BACKUP_FILE" -C /var/lib
+
+    echo "Setting permissions..."
+    chown -R teamspeak3:teamspeak3 "$DATA_DIR"
+
+    echo "Starting TeamSpeak 3 server..."
+    systemctl start keko-ts3
+
+    echo
+    echo "Restore complete!"
+    echo
+    systemctl status keko-ts3 --no-pager || true
+}
+
+# Parse arguments
+case "${1:-}" in
+    --yearly)
+        create_yearly_backup
+        echo
+        list_backups
+        ;;
+    --monthly)
+        create_monthly_backup
+        echo
+        list_backups
+        ;;
+    --all)
+        create_yearly_backup
+        echo
+        create_monthly_backup
+        echo
+        list_backups
+        ;;
+    --list)
+        list_backups
+        ;;
+    --restore)
+        restore_backup "$2"
+        ;;
+    --help|-h)
+        show_usage
+        ;;
+    *)
+        show_usage
+        exit 1
+        ;;
+esac

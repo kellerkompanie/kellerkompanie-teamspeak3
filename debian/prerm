@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    remove|upgrade|deconfigure)
+        # Stop the service before removal
+        if systemctl is-active --quiet keko-ts3.service; then
+            systemctl stop keko-ts3.service || true
+        fi
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

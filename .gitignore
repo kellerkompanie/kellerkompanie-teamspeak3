@@ -1,0 +1,18 @@
+# Build output
+dist/
+
+# TeamSpeak archive (downloaded during build)
+*.tar.bz2
+
+# Python cache
+__pycache__/
+*.pyc
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# AI agents
+.claude/
+CLAUDE.md

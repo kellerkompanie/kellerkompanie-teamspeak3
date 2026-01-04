@@ -1,0 +1,62 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        # Create teamspeak3 system user if it doesn't exist
+        if ! getent passwd teamspeak3 > /dev/null; then
+            adduser --system --group --home /var/lib/teamspeak3 \
+                --no-create-home --disabled-login --quiet teamspeak3
+        fi
+
+        # Set ownership of directories
+        chown -R teamspeak3:teamspeak3 /opt/teamspeak3
+        chown -R teamspeak3:teamspeak3 /var/lib/teamspeak3
+        chown -R teamspeak3:teamspeak3 /var/log/teamspeak3
+
+        # Create symlink for database and files in data directory
+        if [ ! -L /opt/teamspeak3/files ]; then
+            rm -rf /opt/teamspeak3/files
+            ln -s /var/lib/teamspeak3/files /opt/teamspeak3/files
+        fi
+
+        # Create files directory if it doesn't exist
+        mkdir -p /var/lib/teamspeak3/files
+        chown teamspeak3:teamspeak3 /var/lib/teamspeak3/files
+
+        # Symlink for ts3server.sqlitedb
+        if [ ! -L /opt/teamspeak3/ts3server.sqlitedb ]; then
+            rm -f /opt/teamspeak3/ts3server.sqlitedb
+            ln -s /var/lib/teamspeak3/ts3server.sqlitedb /opt/teamspeak3/ts3server.sqlitedb
+        fi
+
+        # Symlink for query_ip_allowlist.txt
+        if [ ! -L /opt/teamspeak3/query_ip_allowlist.txt ]; then
+            rm -f /opt/teamspeak3/query_ip_allowlist.txt
+            ln -s /var/lib/teamspeak3/query_ip_allowlist.txt /opt/teamspeak3/query_ip_allowlist.txt
+        fi
+
+        # Symlink for query_ip_denylist.txt
+        if [ ! -L /opt/teamspeak3/query_ip_denylist.txt ]; then
+            rm -f /opt/teamspeak3/query_ip_denylist.txt
+            ln -s /var/lib/teamspeak3/query_ip_denylist.txt /opt/teamspeak3/query_ip_denylist.txt
+        fi
+
+        # Create default allowlist if it doesn't exist
+        if [ ! -f /var/lib/teamspeak3/query_ip_allowlist.txt ]; then
+            echo "127.0.0.1" > /var/lib/teamspeak3/query_ip_allowlist.txt
+            chown teamspeak3:teamspeak3 /var/lib/teamspeak3/query_ip_allowlist.txt
+        fi
+
+        # Create backup directory
+        mkdir -p /var/backups/keko-ts3
+        chmod 700 /var/backups/keko-ts3
+
+        # Reload systemd
+        systemctl daemon-reload || true
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0
