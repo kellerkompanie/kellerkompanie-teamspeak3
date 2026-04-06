@@ -17,11 +17,40 @@ Restart=on-failure
 RestartSec=10
 
 # Security hardening
+# Prevent the service and its children from gaining new privileges via execve
 NoNewPrivileges=yes
+# Mount the entire filesystem as read-only, except for /dev, /proc, /sys and explicit ReadWritePaths
 ProtectSystem=strict
+# Make /home, /root, and /run/user inaccessible
 ProtectHome=yes
+# Use a private /tmp namespace not shared with other processes
 PrivateTmp=yes
-ReadWritePaths=/var/lib/teamspeak3 /var/log/teamspeak3 /opt/teamspeak3
+# Deny access to physical device nodes
+PrivateDevices=yes
+# Only these paths are writable under ProtectSystem=strict
+ReadWritePaths=/var/lib/teamspeak3 /var/log/teamspeak3
+# Drop all Linux capabilities (the server needs none)
+CapabilityBoundingSet=
+# Make /proc/sys, /sys, /proc/sysrq-trigger, etc. read-only
+ProtectKernelTunables=yes
+# Deny loading or unloading kernel modules
+ProtectKernelModules=yes
+# Deny access to the kernel log ring buffer
+ProtectKernelLogs=yes
+# Make /sys/fs/cgroup read-only
+ProtectControlGroups=yes
+# Deny creation of user, network, pid, etc. namespaces
+RestrictNamespaces=yes
+# Deny setting SUID/SGID bits on files
+RestrictSUIDSGID=yes
+# Deny realtime scheduling policies
+RestrictRealtime=yes
+# Prevent changing the execution personality (e.g. switching to 32-bit mode)
+LockPersonality=yes
+# Clean up System V and POSIX IPC objects when the service exits
+RemoveIPC=yes
+# Restrict syscalls to a safe baseline set for typical system services
+SystemCallFilter=@system-service
 
 [Install]
 WantedBy=multi-user.target

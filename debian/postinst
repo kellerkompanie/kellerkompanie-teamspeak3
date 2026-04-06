@@ -10,7 +10,9 @@ case "$1" in
         fi
 
         # Set ownership of directories
-        chown -R teamspeak3:teamspeak3 /opt/teamspeak3
+        # Keep binaries owned by root so the service user cannot modify its own executables
+        chown -R root:root /opt/teamspeak3
+        chmod -R 755 /opt/teamspeak3
         chown -R teamspeak3:teamspeak3 /var/lib/teamspeak3
         chown -R teamspeak3:teamspeak3 /var/log/teamspeak3
 
