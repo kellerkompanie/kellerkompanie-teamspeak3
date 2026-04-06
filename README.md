@@ -50,12 +50,12 @@ tail -f /var/log/teamspeak3/ts3server_*.log
 
 ## File Locations
 
-| Path | Description |
-|------|-------------|
-| `/opt/teamspeak3/` | Server binaries |
-| `/var/lib/teamspeak3/` | Data directory (database, files, config) |
-| `/var/log/teamspeak3/` | Log files |
-| `/var/backups/keko-ts3/` | Backup archives |
+| Path                     | Description                              |
+|--------------------------|------------------------------------------|
+| `/opt/teamspeak3/`       | Server binaries                          |
+| `/var/lib/teamspeak3/`   | Data directory (database, files, config) |
+| `/var/log/teamspeak3/`   | Log files                                |
+| `/var/backups/keko-ts3/` | Backup archives                          |
 
 ## First Run
 
@@ -67,7 +67,8 @@ sudo journalctl -u keko-ts3 | grep -A5 "token="
 
 ## License Key
 
-A TeamSpeak 3 server without a license is limited to 1 virtual server with 32 slots. If you have a license, install it as follows:
+A TeamSpeak 3 server without a license is limited to 1 virtual server with 32 slots. If you have a license, install it
+as follows:
 
 ```bash
 # Copy your license file to the data directory
@@ -201,7 +202,8 @@ sudo journalctl -u keko-ts3 -n 50
 
 ## Migrating from Legacy Installation
 
-If you have an existing TeamSpeak 3 server installation (manual install, not using this package), you can import your data using the included `keko-ts3-import-legacy` tool.
+If you have an existing TeamSpeak 3 server installation (manual install, not using this package), you can import your
+data using the included `keko-ts3-import-legacy` tool.
 
 ### 1. Create a backup on your old server
 
@@ -251,6 +253,7 @@ sudo keko-ts3-import-legacy /tmp/teamspeak_backup.tar.gz
 ```
 
 The script will:
+
 - Extract the backup and locate the TeamSpeak data
 - Show which files will be imported
 - Ask for confirmation
@@ -266,14 +269,14 @@ sudo keko-ts3-import-legacy -y /tmp/teamspeak_backup.tar.gz
 
 ### What gets imported
 
-| File | Description |
-|------|-------------|
-| `ts3server.sqlitedb` | Server database (users, channels, permissions, bans) |
-| `licensekey.dat` | License key (if present) |
-| `files/` | Uploaded files (icons, avatars, channel file transfers) |
+| File                     | Description                                              |
+|--------------------------|----------------------------------------------------------|
+| `ts3server.sqlitedb`     | Server database (users, channels, permissions, bans)     |
+| `licensekey.dat`         | License key (if present)                                 |
+| `files/`                 | Uploaded files (icons, avatars, channel file transfers)  |
 | `query_ip_whitelist.txt` | Query IP allowlist (renamed to `query_ip_allowlist.txt`) |
-| `ssh_host_rsa_key` | SSH query host key (preserves SSH fingerprint) |
-| `ts3server.ini` | Server configuration |
+| `ssh_host_rsa_key`       | SSH query host key (preserves SSH fingerprint)           |
+| `ts3server.ini`          | Server configuration                                     |
 
 ### 5. Clean up
 
